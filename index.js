@@ -1,5 +1,9 @@
 const canvas = document.querySelector("canvas");
 const c = canvas.getContext("2d");
+const scoreEl = document.querySelector("#scoreEl");
+const bigScoreEl = document.querySelector("#bigScoreEl");
+const startBtn = document.querySelector("#start");
+const modal = document.querySelector("#modal");
 
 canvas.width = innerWidth;
 canvas.height = innerHeight;
@@ -100,10 +104,23 @@ class Particle {
 const centerX = canvas.width / 2;
 const centerY = canvas.height / 2;
 
-const player = new Player(centerX, centerY, 10,"white");
-const projectiles = [];
-const enemies = [];
-const particles = [];
+let score;
+let player = new Player(centerX, centerY, 10,"white");
+let projectiles = [];
+let enemies = [];
+let particles = [];
+
+function init(){
+	score = 0;
+	scoreEl.innerHTML = score;
+	player = new Player(centerX, centerY, 10,"white");
+	projectiles = [];
+	enemies = [];
+	particles = [];
+
+	animate();
+	spawnEnemies();
+};
 
 function spawnEnemies(){
 	setInterval(()=>{
@@ -165,23 +182,31 @@ function animate(){
 
 	enemies.forEach((enemy,index) => {
 		enemy.update();
+
+		// game over
 		const dist = Math.hypot(player.x - enemy.x, player.y - enemy.y);
 		if(dist - enemy.radius - player.radius < 0.5){
 			cancelAnimationFrame(animationId);
+			modal.style.display = 'flex';
+			bigScoreEl.innerHTML = score;
 		}
 
 		projectiles.forEach((projectile, projectileIndex) => {
 			const dist = Math.hypot(projectile.x - enemy.x, projectile.y - enemy.y);
+			
+			//	enemy hit
 			if(dist - enemy.radius - projectile.radius < 0.5){
 
+				// explosion on hit
 				for(let i = 0; i < enemy.radius * 2; i++){
 					particles.push(new Particle(projectile.x, projectile.y,
-					 Math.random() * 2, enemy.color, {
-						x: (Math.random() - 0.5) * (Math.random() * 6),
-						y: (Math.random() - 0.5) * (Math.random() * 6)
-					}));
+						Math.random() * 2, enemy.color, {
+							x: (Math.random() - 0.5) * (Math.random() * 6),
+							y: (Math.random() - 0.5) * (Math.random() * 6)
+						}));
 				}
 
+				// enemy and projectile descructed 
 				if(enemy.radius - 10 > 5){
 					gsap.to(enemy, {
 						radius: enemy.radius - 10
@@ -189,11 +214,15 @@ function animate(){
 					setTimeout(()=>{
 						projectiles.splice(projectileIndex, 1);
 					}, 0);
+					score += 100;
+					scoreEl.innerHTML = score;
 				}else{
 					setTimeout(()=>{
 						projectiles.splice(projectileIndex, 1);
 						enemies.splice(index, 1);
 					}, 0);
+					score += 150;
+					scoreEl.innerHTML = score;
 				}
 			}
 		});
@@ -212,5 +241,8 @@ addEventListener('click', (event)=>{
 	projectiles.push(new Projectile(centerX, centerY, 5, 'white', velocity));
 });
 
-animate();
-spawnEnemies();
+
+startBtn.addEventListener('click', ()=>{
+	modal.style.display = 'none';
+	init();
+});
